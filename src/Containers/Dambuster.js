@@ -45,7 +45,27 @@ const Dambuster = () => {
     const [masterGain, setMaterGain] = useState();
     const [output, setOutput] = useState();
 
+    const noteOne = useRef();
+
     const [oscillators, setOscillators] = useState([]);
+
+    const onDown = (e) => {
+        console.log(e)
+    }
+
+    const onUp = (e) => {
+        console.log(e)
+    }
+
+    useEffect(() => {
+        window.addEventListener("keydown", onDown)
+        window.addEventListener("keyup", onUp)
+
+        return () => {
+            window.removeEventListener("keydown", onDown)
+            window.removeEventListener("keyup", onUp)
+        }
+    })
 
 
 
@@ -53,6 +73,8 @@ const Dambuster = () => {
         setInput(userContext);
         const gain = await userContext.createGain();
         const output = await userContext.destination;
+
+        noteOne.current = userContext.createGain()
 
         gain.connect(output)
         setMaterGain(gain);
@@ -94,6 +116,7 @@ const Dambuster = () => {
         oscNode.frequency.value = frequency;
 
         const oscGain = await userContext.createGain();
+        oscGain.gain.value = 0;
 
         const oscObj = {
             node: oscNode,
@@ -101,12 +124,18 @@ const Dambuster = () => {
             id: nodeId
         };
 
+        const now = userContext.currentTime;
+        const attack = now + 0.2;
+
         setOscillators([...oscillators, oscObj])
         
         oscNode.connect(oscGain);
         oscGain.connect(masterGain);
+        
+
 
         oscNode.start();
+        oscGain.gain.linearRampToValueAtTime(1.0, attack)
     };
 
 
@@ -117,22 +146,26 @@ const Dambuster = () => {
         const now = userContext.currentTime;
         const release = now + 0.2;
         await oscObj[0].gainNode.gain.linearRampToValueAtTime(0.0, release);
-
         oscObj[0].node.stop(release);
-        oscObj[0].node.disconnect();
-        oscObj[0].gainNode.disconnect();
+
+        // oscObj[0].node.disconnect();
+        // oscObj[0].gainNode.disconnect();
         oscillators.splice(oscObj[0]);
     }
 
     const handleWaveformChange = (e) => {
         setOscillatorWave(e.target.value)
+    };
+
+    const handleKey = (e) => {
+        console.log(e.codeKey)
     }
 
 
     return (
-        <div>
+        <div onKeyDown={handleKey} tabIndex="0">
             <h1>Dambuster</h1>
-            <div>
+            <div >
                 {!audioCTX && <button onClick={getContext}>get audio</button>}
             </div>
             <div>
