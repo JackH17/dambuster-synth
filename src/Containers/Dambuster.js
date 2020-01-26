@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { resolve } from 'dns';
 
 const Dambuster = () => {
 
@@ -48,10 +49,14 @@ const Dambuster = () => {
 
 
 
-    const createAudioNodes = (userContext) => {
+    const createAudioNodes = async (userContext) => {
         setInput(userContext);
-        setMaterGain(userContext.createGain())
-        setOutput(userContext.destination);
+        const gain = await userContext.createGain();
+        const output = await userContext.destination;
+
+        gain.connect(output)
+        setMaterGain(gain);
+        setOutput(output);
     }
 
     useEffect(() => {
@@ -81,7 +86,6 @@ const Dambuster = () => {
 
     const playTone = async (e) => {
 
-
         const nodeId = e.target.id;
         const frequency = e.target.value
 
@@ -89,27 +93,34 @@ const Dambuster = () => {
         oscNode.type = oscillatorWave;
         oscNode.frequency.value = frequency;
 
+        const oscGain = await userContext.createGain();
+
         const oscObj = {
             node: oscNode,
+            gainNode: oscGain,
             id: nodeId
         };
 
         setOscillators([...oscillators, oscObj])
         
-        oscNode.connect(masterGain);
-        masterGain.connect(output);
+        oscNode.connect(oscGain);
+        oscGain.connect(masterGain);
 
         oscNode.start();
     };
+
 
     const stopTone = async (e) => {
 
         const oscObj = await oscillators.filter(osc => osc.id === e.target.id);
 
         const now = userContext.currentTime;
+        const release = now + 0.2;
+        await oscObj[0].gainNode.gain.linearRampToValueAtTime(0.0, release);
 
-        oscObj[0].node.stop(now);
-        oscObj[0].node.disconnect(masterGain);
+        oscObj[0].node.stop(release);
+        oscObj[0].node.disconnect();
+        oscObj[0].gainNode.disconnect();
         oscillators.splice(oscObj[0]);
     }
 
@@ -129,9 +140,13 @@ const Dambuster = () => {
                     {waveforms.map(wave => <option value={wave}>{wave}</option>)}
                 </select>
             </div>
+
             <div>
-                {audioCTX && cBluesScale.map(note => <button key={note.note} id={note.note} value={note.frequency} onMouseDown={playTone} onMouseUp={stopTone}> {note.note.slice(0, -1)}</button>)}
+                {audioCTX && cBluesScale.map(note => 
+                <button key={note.note} id={note.note} value={note.frequency}
+                 onMouseDown={playTone} onMouseUp={stopTone}> {note.note.slice(0, -1)}</button>)}
             </div>
+
         </div>
     )
 };
