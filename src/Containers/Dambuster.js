@@ -50,11 +50,65 @@ const Dambuster = () => {
     const [oscillators, setOscillators] = useState([]);
 
     const onDown = (e) => {
-        console.log(e)
+
+        if(e.key === `a`){
+            playTone('C4', 261.63)
+        };
+
+        if(e.key === `s`){
+            console.log(`s pressed`)
+        };
+
+        if(e.key === `d`){
+            console.log(`d pressed`)
+        };
+
+        if(e.key === `f`){
+            console.log(`f pressed`)
+        };
+
+        if(e.key === `g`){
+            console.log(`g pressed`)
+        };
+
+        if(e.key === `h`){
+            console.log(`h pressed`)
+        };
+
+        if(e.key === `j`){
+            console.log(`j pressed`)
+        };
     }
 
     const onUp = (e) => {
-        console.log(e)
+        
+        if(e.key === `a`){
+            console.log('a up')
+        };
+
+        if(e.key === `s`){
+            console.log(`s up`)
+        };
+
+        if(e.key === `d`){
+            console.log(`d up`)
+        };
+
+        if(e.key === `f`){
+            console.log(`f up`)
+        };
+
+        if(e.key === `g`){
+            console.log(`g up`)
+        };
+
+        if(e.key === `h`){
+            console.log(`h up`)
+        };
+
+        if(e.key === `j`){
+            console.log(`j up`)
+        };
     }
 
     useEffect(() => {
@@ -106,10 +160,10 @@ const Dambuster = () => {
         setAudioCTX(!audioCTX)  
     };
 
-    const playTone = async (e) => {
+    const playTone = async (id, freq) => {
 
-        const nodeId = e.target.id;
-        const frequency = e.target.value
+        const nodeId = id;
+        const frequency = freq;
 
         const oscNode = await userContext.createOscillator();
         oscNode.type = oscillatorWave;
@@ -131,8 +185,6 @@ const Dambuster = () => {
         
         oscNode.connect(oscGain);
         oscGain.connect(masterGain);
-        
-
 
         oscNode.start();
         oscGain.gain.linearRampToValueAtTime(1.0, attack)
@@ -157,13 +209,8 @@ const Dambuster = () => {
         setOscillatorWave(e.target.value)
     };
 
-    const handleKey = (e) => {
-        console.log(e.codeKey)
-    }
-
-
     return (
-        <div onKeyDown={handleKey} tabIndex="0">
+        <div>
             <h1>Dambuster</h1>
             <div >
                 {!audioCTX && <button onClick={getContext}>get audio</button>}
