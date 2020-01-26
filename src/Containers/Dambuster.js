@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 const Dambuster = () => {
 
@@ -36,6 +36,10 @@ const Dambuster = () => {
         },
     ]
 
+    const waveforms = ['sine', 'square', 'sawtooth', 'triangle'];
+
+    const [oscillatorWave, setOscillatorWave] = useState('sine');
+
     const [input, setInput] = useState();
     const [masterGain, setMaterGain] = useState();
     const [output, setOutput] = useState();
@@ -49,6 +53,10 @@ const Dambuster = () => {
         setMaterGain(userContext.createGain())
         setOutput(userContext.destination);
     }
+
+    useEffect(() => {
+        console.log(oscillatorWave)
+    }, [oscillatorWave])
 
     useEffect(() => {
         if(!userContext){
@@ -78,7 +86,7 @@ const Dambuster = () => {
         const frequency = e.target.value
 
         const oscNode = await userContext.createOscillator();
-        oscNode.type = 'sine';
+        oscNode.type = oscillatorWave;
         oscNode.frequency.value = frequency;
 
         const oscObj = {
@@ -105,12 +113,25 @@ const Dambuster = () => {
         oscillators.splice(oscObj[0]);
     }
 
+    const handleWaveformChange = (e) => {
+        setOscillatorWave(e.target.value)
+    }
+
 
     return (
         <div>
             <h1>Dambuster</h1>
-            {!audioCTX && <button onClick={getContext}>get audio</button>}
-            {audioCTX && cBluesScale.map(note => <button key={note.note} id={note.note} value={note.frequency} onMouseDown={playTone} onMouseUp={stopTone}> {note.note.slice(0, -1)}</button>)}
+            <div>
+                {!audioCTX && <button onClick={getContext}>get audio</button>}
+            </div>
+            <div>
+                <select onChange={handleWaveformChange}>
+                    {waveforms.map(wave => <option value={wave}>{wave}</option>)}
+                </select>
+            </div>
+            <div>
+                {audioCTX && cBluesScale.map(note => <button key={note.note} id={note.note} value={note.frequency} onMouseDown={playTone} onMouseUp={stopTone}> {note.note.slice(0, -1)}</button>)}
+            </div>
         </div>
     )
 };
