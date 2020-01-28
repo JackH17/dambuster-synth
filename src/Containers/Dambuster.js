@@ -74,6 +74,13 @@ const Dambuster = () => {
     const [masterGain, setMaterGain] = useState();
     const [output, setOutput] = useState();
 
+    const noteList = {
+        C : {
+            pressed: false,
+            node: null
+        }
+    }
+
     const noteOne = useRef();
     const noteTwo = useRef();
     const noteThree = useRef();
@@ -91,6 +98,10 @@ const Dambuster = () => {
 
     const [oscillators, setOscillators] = useState([]);
 
+    useEffect(() => {
+        console.log(oscillators)
+    }, [oscillators])
+
     const onDown = (e) => {
 
         if(e.repeat) {
@@ -99,6 +110,7 @@ const Dambuster = () => {
 
         if(e.key === `d`){
             setCPressed(!cPressed)
+            noteList.C.pressed = !noteList.C.pressed
             playTone(noteOne.current.attrs)
         };
 
@@ -164,11 +176,18 @@ const Dambuster = () => {
 
     }
 
-    const onUp = (e) => {
+    const onUp = async (e) => {
 
         if(e.key === `d`){
+
+            if(!cPressed){
+                return;
+            }
+
             setCPressed(!cPressed)
-            stopTone(noteOne.current.attrs)
+            const oscObj = await oscillators.filter(osc => osc.id === noteOne.current.attrs.id);
+            stopTone(oscObj)
+            
         };
 
         if(e.key === `r`){
@@ -178,7 +197,10 @@ const Dambuster = () => {
 
         if(e.key === `f`){
             setDPressed(!dPressed)
-            stopTone(noteTwo.current.attrs)
+            const oscObj = await oscillators.filter(osc => osc.id === noteTwo.current.attrs.id);
+            stopTone(oscObj)
+            removeOscillator(noteTwo.current.attrs.id)
+
         };
 
         if(e.key === `t`){
@@ -260,7 +282,6 @@ const Dambuster = () => {
         if(!userContext){
             return;
         }
-        console.log('creating nodes')
         createAudioNodes(userContext);
     }, [userContext])
 
@@ -280,48 +301,60 @@ const Dambuster = () => {
 
     const playTone = async ({id, value}) => {
 
-        const nodeId = id;
-        const frequency = value;
+        const noteRef = id.slice(0, -1)
+        console.log(noteRef)
+        console.log(noteList.noteRef)
 
-        const oscNode = await userContext.createOscillator();
-        oscNode.type = oscillatorWave;
-        oscNode.frequency.value = frequency;
+        // const nodeId = id;
+        // const frequency = value;
 
-        const oscGain = await userContext.createGain();
-        oscGain.gain.value = 0;
+        // const oscNode = await userContext.createOscillator();
+        // oscNode.type = oscillatorWave;
+        // oscNode.frequency.value = frequency;
 
-        const oscObj = {
-            node: oscNode,
-            gainNode: oscGain,
-            id: nodeId
-        };
+        // const oscGain = await userContext.createGain();
+        // oscGain.gain.value = 0;
 
-        const now = userContext.currentTime;
-        const attack = now + 0.001;
+        // const oscObj = {
+        //     node: oscNode,
+        //     gainNode: oscGain,
+        //     id: nodeId
+        // };
 
-        setOscillators([...oscillators, oscObj])
+        // const now = userContext.currentTime;
+        // const attack = now + 0.001;
+
+        // // oscillators.push(oscObj)
+        // noteRef.current = oscObj;
         
-        oscNode.connect(oscGain);
-        oscGain.connect(masterGain);
+        // oscNode.connect(oscGain);
+        // oscGain.connect(masterGain);
 
-        oscNode.start();
-        oscGain.gain.linearRampToValueAtTime(1.0, attack)
+        // oscNode.start();
+        // oscGain.gain.linearRampToValueAtTime(1.0, attack)
     };
 
+    const removeOscillator = ({id}) => {
+        setOscillators(oscillators.filter(osc => osc.id !== id)) 
+    }
 
-    const stopTone = async ({id}) => {
+    const stopTone = async (obj) => {
 
+        const currOsc = obj[0]
 
-        const oscObj = await oscillators.filter(osc => osc.id === id);
 
         const now = userContext.currentTime;
         const release = now + 0.2;
-        await oscObj[0].gainNode.gain.linearRampToValueAtTime(0.0, release);
-        oscObj[0].node.stop(release);
+        
+        await currOsc.gainNode.gain.linearRampToValueAtTime(0.0, release);
+        
+        await currOsc.node.stop(release);
+
+        removeOscillator(currOsc)
 
         // oscObj[0].node.disconnect();
         // oscObj[0].gainNode.disconnect();
-        oscillators.splice(oscObj[0]);
+
     }
 
     const handleWaveformChange = (e) => {
@@ -333,9 +366,9 @@ const Dambuster = () => {
         <div>
             <Stage ref={stageRef} width={stageWidth} height={stageHeight}>
                 <Layer>
-                    
                     <Rect width={stageWidth} height={stageHeight} fill='pink'/>
-                    <Circle x={widthPercentage(5)} y={heightPercentage(5)} radius={widthPercentage(5)} fill='white' onClick={getContext}/>
+                    <Circle x={widthPercentage(10)} y={heightPercentage(10)} radius={widthPercentage(2)} fill='white' onClick={getContext}/>
+
                     <Rect ref={noteOne} id={octaveSelected && currentOctave.current ? currentOctave.current.one.note : null} value={octaveSelected && currentOctave.current ? currentOctave.current.one.frequency : null}  x={widthPercentage(30)} y={heightPercentage(70)} width={widthPercentage(3)} height={heightPercentage(10)} fill={cPressed ? 'yellow' : 'white'}/>
                     <Rect ref={noteTwo}  id={octaveSelected && currentOctave.current ? currentOctave.current.two.note : null} value={octaveSelected && currentOctave.current ? currentOctave.current.two.frequency : null} x={widthPercentage(35)} y={heightPercentage(70)} width={widthPercentage(3)} height={heightPercentage(10)} fill={dPressed ? 'yellow' : 'white'}/>
                     <Rect ref={noteThree}  id={octaveSelected && currentOctave.current ? currentOctave.current.three.note : null} value={octaveSelected && currentOctave.current ? currentOctave.current.three.frequency : null} x={widthPercentage(40)} y={heightPercentage(70)} width={widthPercentage(3)} height={heightPercentage(10)} fill={ePressed ? 'yellow' : 'white'}/>
